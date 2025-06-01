@@ -86,15 +86,17 @@ def train_lstm_model():
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-    train_losses.append(epoch_loss / len(train_loader))
+        train_losses.append(epoch_loss / len(train_loader))  # Harus di dalam loop epoch
 
-    model.eval()
-    val_loss = 0
-    with torch.no_grad():
-        for X_batch, y_batch in test_loader:
-            outputs = model(X_batch)
-            val_loss += criterion(outputs, y_batch).item()
-    val_losses.append(val_loss / len(test_loader))
+        model.eval()
+        val_loss = 0
+        with torch.no_grad():
+            for X_batch, y_batch in test_loader:
+                outputs = model(X_batch)
+                val_loss += criterion(outputs, y_batch).item()
+        val_losses.append(val_loss / len(test_loader))  # Harus di dalam loop epoch
+
+    return model, train_losses, val_losses
 
 # Sidebar Train dari user
 st.sidebar.header("Training Model LSTM")
