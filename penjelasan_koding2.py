@@ -93,7 +93,7 @@ def train_lstm_model():
     with torch.no_grad():
         for X_batch, y_batch in test_loader:
             outputs = model(X_batch)
-            val_loss += criterion(ourputs, y_batch).item()
+            val_loss += criterion(outputs, y_batch).item()
     val_losses.append(val_loss / len(test_loader))
 
 # Sidebar Train dari user
