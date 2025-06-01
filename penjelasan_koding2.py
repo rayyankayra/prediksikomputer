@@ -67,7 +67,6 @@ class LSTMModel(nn.Module):
         x = self.relu(x)
         return self.fc2(x)
 
-@st.cache_data(show_spinner=False)
 def train_lstm_model():
     model = LSTMModel()
     criterion = nn.MSELoss()
@@ -86,7 +85,7 @@ def train_lstm_model():
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-        train_losses.append(epoch_loss / len(train_loader))  # Harus di dalam loop epoch
+        train_losses.append(epoch_loss / len(train_loader))
 
         model.eval()
         val_loss = 0
@@ -94,7 +93,7 @@ def train_lstm_model():
             for X_batch, y_batch in test_loader:
                 outputs = model(X_batch)
                 val_loss += criterion(outputs, y_batch).item()
-        val_losses.append(val_loss / len(test_loader))  # Harus di dalam loop epoch
+        val_losses.append(val_loss / len(test_loader))
 
     return model, train_losses, val_losses
 
