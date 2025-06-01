@@ -73,6 +73,8 @@ def train_lstm_model():
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     epochs = 50
+    train_losses = []
+    val_losses = []
 
     for epoch in range(epochs):
         model.train()
@@ -84,11 +86,37 @@ def train_lstm_model():
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-    return model
+    train_losses.append(epoch_loss / len(train_loader))
 
-# Latih model sekali dan cache supaya tidak ngulang saat interaksi
-model = train_lstm_model()
-model.eval()
+    model.eval()
+    val_loss = 0
+    with torch.no_grad():
+        for X_batch, y_batch in test_loader:
+            outputs = model(X_batch)
+            val_loss += criterion(ourputs, y_batch).item()
+    val_losses.append(val_loss / len(test_loader))
+
+# Sidebar Train dari user
+st.sidebar.header("Training Model LSTM")
+train_button = st.sidebar.button("Train Model LSTM")
+
+if train_button:
+    with st.spinner("Melatih model LSTM..."):
+        model, train_losses, val_losses = train_lstm_model()
+    st.success("Training selesai!")
+
+    # Tampilkan grafik loss asli
+    fig, ax = plt.subplots()
+    ax.plot(train_losses, label='Train Loss')
+    ax.plot(val_losses, label='Validation Loss')
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel('Loss')
+    ax.set_title('Grafik Loss Training & Validasi Model LSTM')
+    ax.legend()
+    st.pyplot(fig)
+
+    # Simpan model ke variabel global supaya bisa dipakai prediksi input user
+    st.session_state['model'] = model
 
 # Sidebar input dari user
 st.sidebar.header("Input Data Listrik")
@@ -99,23 +127,29 @@ input_volt = st.sidebar.number_input("Volt (V)", min_value=210.0, max_value=230.
 predict_button = st.sidebar.button("Prediksi Jumlah Komputer")
 
 if predict_button:
-    # Buat input array dan scaling
-    input_arr = np.array([[input_ampere, input_watt, input_volt]])
-    input_scaled = scaler_X.transform(input_arr)
-    input_tensor = torch.FloatTensor(input_scaled)
+    if 'model' not in st.session_state:
+        st.warning("Silahkan latih model dulu dengan klik tombol 'Train Model LSTM'.")
+    else:
+        model = st.session_state['model']
+        model.eval()
+        
+        # Buat input array dan scaling
+        input_arr = np.array([[input_ampere, input_watt, input_volt]])
+        input_scaled = scaler_X.transform(input_arr)
+        input_tensor = torch.FloatTensor(input_scaled)
 
-    # Prediksi dengan model
-    with torch.no_grad():
-        pred_scaled = model(input_tensor).numpy()
-
-    # Inverse scaling ke nilai asli
-    pred_original = scaler_y.inverse_transform(pred_scaled)
-    pred_youtube = max(0, pred_original[0][0])
-    pred_idle = max(0, pred_original[0][1])
-
-    st.subheader("Hasil Prediksi")
-    st.write(f"Jumlah komputer aktif YouTube diperkirakan: **{pred_youtube:.1f}**")
-    st.write(f"Jumlah komputer idle diperkirakan: **{pred_idle:.1f}**")
+        # Prediksi dengan model
+        with torch.no_grad():
+            pred_scaled = model(input_tensor).numpy()
+    
+        # Inverse scaling ke nilai asli
+        pred_original = scaler_y.inverse_transform(pred_scaled)
+        pred_youtube = max(0, pred_original[0][0])
+        pred_idle = max(0, pred_original[0][1])
+    
+        st.subheader("Hasil Prediksi")
+        st.write(f"Jumlah komputer aktif YouTube diperkirakan: **{pred_youtube:.1f}**")
+        st.write(f"Jumlah komputer idle diperkirakan: **{pred_idle:.1f}**")
 
 # Tampilkan contoh plot loss training (opsional, hanya visualisasi)
 st.write("---")
